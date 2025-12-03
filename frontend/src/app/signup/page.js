@@ -13,7 +13,7 @@ export default function SignupPage() {
     const handleSignup = async (e) => {
         e.preventDefault();
         try {
-            await axios.post('http://localhost:5000/api/register', { email, password });
+            await axios.post('https://intern-1u6c.onrender.com/api/register', { email, password });
             alert('Registration Successful! Please Login.');
             router.push('/login');
         } catch (err) {

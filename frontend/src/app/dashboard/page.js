@@ -32,7 +32,7 @@ export default function Dashboard() {
 
     const fetchTasks = async (token) => {
         try {
-            const res = await axios.get('http://localhost:5000/api/tasks', {
+            const res = await axios.get('https://intern-1u6c.onrender.com/api/tasks', {
                 headers: { Authorization: token }
             });
 
@@ -47,7 +47,7 @@ export default function Dashboard() {
                 // Check if date is in the past AND it's not today
                 if (task.status === 'pending' && taskDate < now && taskDate.getDate() !== now.getDate()) {
                     // Update Backend
-                    await axios.put(`http://localhost:5000/api/tasks/${task._id}`,
+                    await axios.put(`https://intern-1u6c.onrender.com/api/tasks/${task._id}`,
                         { status: 'missed' },
                         { headers: { Authorization: token } }
                     );
@@ -73,7 +73,7 @@ export default function Dashboard() {
         e.preventDefault();
         const token = localStorage.getItem('token');
         try {
-            await axios.post('http://localhost:5000/api/tasks',
+            await axios.post('https://intern-1u6c.onrender.com/api/tasks',
                 { title, description, dueDate },
                 { headers: { Authorization: token } }
             );
@@ -90,7 +90,7 @@ export default function Dashboard() {
     const updateStatus = async (id, newStatus) => {
         const token = localStorage.getItem('token');
         try {
-            await axios.put(`http://localhost:5000/api/tasks/${id}`,
+            await axios.put(`https://intern-1u6c.onrender.com/api/tasks/${id}`,
                 { status: newStatus },
                 { headers: { Authorization: token } }
             );
@@ -105,7 +105,7 @@ export default function Dashboard() {
 
         const token = localStorage.getItem('token');
         try {
-            await axios.delete(`http://localhost:5000/api/tasks/${id}`, {
+            await axios.delete(`https://intern-1u6c.onrender.com/api/tasks/${id}`, {
                 headers: { Authorization: token }
             });
             fetchTasks(token);

@@ -18,7 +18,7 @@ export default function LoginPage() {
         setLoading(true);
 
         try {
-            const res = await axios.post('http://localhost:5000/api/login', { email, password });
+            const res = await axios.post('https://intern-1u6c.onrender.com/api/login', { email, password });
 
             // Only proceed if we actually got a token
             if (res.data.token) {
