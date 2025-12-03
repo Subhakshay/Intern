@@ -9,16 +9,14 @@ const bcrypt = require('bcryptjs');
 dotenv.config();
 const app = express();
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// MongoDB Connection
 mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/Intern')
     .then(() => console.log('MongoDB Connected'))
     .catch(err => console.log(err));
 
-// --- MODELS ---
+// --- UPDATED MODEL ---
 const UserSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true }
@@ -27,6 +25,9 @@ const User = mongoose.model('User', UserSchema);
 
 const TaskSchema = new mongoose.Schema({
     title: { type: String, required: true },
+    description: { type: String }, 
+    dueDate: { type: Date, required: true }, 
+    status: { type: String, default: 'pending' }, 
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 });
 const Task = mongoose.model('Task', TaskSchema);
@@ -44,7 +45,7 @@ const authenticateToken = (req, res, next) => {
 
 // --- ROUTES ---
 
-// 1. Register
+// Register & Login 
 app.post('/api/register', async (req, res) => {
     try {
         const hashedPassword = await bcrypt.hash(req.body.password, 10);
@@ -56,33 +57,54 @@ app.post('/api/register', async (req, res) => {
     }
 });
 
-// 2. Login
 app.post('/api/login', async (req, res) => {
-    const user = await User.findOne({ email: req.body.email });
-    if (!user) return res.status(400).send('User not found');
+    try {
+        const user = await User.findOne({ email: req.body.email });
+        if (!user) {
+            return res.status(400).send('User not found');
+        }
+        const isPasswordValid = await bcrypt.compare(req.body.password, user.password);
 
-    if (await bcrypt.compare(req.body.password, user.password)) {
-        const token = jwt.sign({ _id: user._id, email: user.email }, process.env.JWT_SECRET);
-        res.json({ token, email: user.email });
-    } else {
-        res.send('Not Allowed');
+        if (isPasswordValid) {
+            const token = jwt.sign({ _id: user._id, email: user.email }, process.env.JWT_SECRET);
+            res.json({ token, email: user.email });
+        } else {
+            return res.status(401).send('Invalid password');
+        }
+    } catch (err) {
+        res.status(500).send("Internal Server Error");
     }
 });
 
-// 3. Get Tasks (Protected)
+// Get Tasks
 app.get('/api/tasks', authenticateToken, async (req, res) => {
-    const tasks = await Task.find({ userId: req.user._id });
+    const tasks = await Task.find({ userId: req.user._id});
     res.json(tasks);
 });
 
-// 4. Create Task (Protected)
+// Create Task 
 app.post('/api/tasks', authenticateToken, async (req, res) => {
-    const task = new Task({ title: req.body.title, userId: req.user._id });
+    const { title, description, dueDate } = req.body;
+    const task = new Task({
+        title,
+        description,
+        dueDate,
+        status: 'pending',
+        userId: req.user._id,
+        Email: req.user.email
+    });
     await task.save();
     res.status(201).json(task);
 });
 
-// 5. Delete Task (Protected)
+// Update Task Status (New Route for Completed/Missed)
+app.put('/api/tasks/:id', authenticateToken, async (req, res) => {
+    const { status } = req.body;
+    const task = await Task.findByIdAndUpdate(req.params.id, { status }, { new: true });
+    res.json(task);
+});
+
+// Delete Task
 app.delete('/api/tasks/:id', authenticateToken, async (req, res) => {
     await Task.findByIdAndDelete(req.params.id);
     res.json({ message: 'Deleted' });
